@@ -41,9 +41,14 @@ Backend Filter logic
 
 ```go
 var users []User
-u, _ := url.ParseRequestURI(urlString)
-res := p.Parse(u.Query())
-db.Where(res.WhereClause.Where, res.WhereClause.ArgumentMap).Sort(res.OrderByClause).Find(&users)
+res := parser.Parse(r.URL.Query())
+if len(res.WhereClause.Where) > 0 {
+    db = db.Where(res.WhereClause.Where, res.WhereClause.Arguments...)
+}
+if len(res.OrderByClause) > 0 {
+    db = db.Order(res.OrderByClause)
+}
+db.Find(&users)
 ```
 
 ## Criteria 1
