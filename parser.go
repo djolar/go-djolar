@@ -150,7 +150,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				val := fmt.Sprintf("%%%s%%", strings.ToLower(matches[2]))
 				where = append(where, fmt.Sprintf("LOWER(%s) LIKE %s", fn, ph))
 				args = append(args, val)
-				argMap[p.GetArgMapKey(fn)] = val
+				argMap[fn] = val
 				continue
 			}
 
@@ -163,7 +163,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				val := fmt.Sprintf("%%%s%%", matches[2])
 				where = append(where, fmt.Sprintf("%s LIKE %s", fn, ph))
 				args = append(args, val)
-				argMap[p.GetArgMapKey(fn)] = val
+				argMap[fn] = val
 				continue
 			}
 
@@ -175,7 +175,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				ph := p.GetPlaceHolder(fn)
 				where = append(where, fmt.Sprintf("%s = %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(fn)] = matches[2]
+				argMap[fn] = matches[2]
 				continue
 			}
 
@@ -187,7 +187,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				ph := p.GetPlaceHolder(fn)
 				where = append(where, fmt.Sprintf("%s <> %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(fn)] = matches[2]
+				argMap[fn] = matches[2]
 				continue
 			}
 
@@ -199,7 +199,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				ph := p.GetPlaceHolder(fn)
 				where = append(where, fmt.Sprintf("%s < %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(fn)] = matches[2]
+				argMap[fn] = matches[2]
 				continue
 			}
 
@@ -211,7 +211,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				ph := p.GetPlaceHolder(fn)
 				where = append(where, fmt.Sprintf("%s <= %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(fn)] = matches[2]
+				argMap[fn] = matches[2]
 				continue
 			}
 
@@ -223,7 +223,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				ph := p.GetPlaceHolder(fn)
 				where = append(where, fmt.Sprintf("%s > %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(fn)] = matches[2]
+				argMap[fn] = matches[2]
 				continue
 			}
 
@@ -235,7 +235,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				ph := p.GetPlaceHolder(fn)
 				where = append(where, fmt.Sprintf("%s >= %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(fn)] = matches[2]
+				argMap[fn] = matches[2]
 				continue
 			}
 
@@ -248,7 +248,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				val := strings.Split(matches[2], ",")
 				where = append(where, fmt.Sprintf("%s IN (%s)", fn, ph))
 				args = append(args, val)
-				argMap[p.GetArgMapKey(fn)] = val
+				argMap[fn] = val
 				continue
 			}
 
@@ -261,7 +261,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 				val := strings.Split(matches[2], ",")
 				where = append(where, fmt.Sprintf("%s NOT IN (%s)", fn, ph))
 				args = append(args, val)
-				argMap[p.GetArgMapKey(fn)] = val
+				argMap[fn] = val
 				continue
 			}
 		}
