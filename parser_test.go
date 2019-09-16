@@ -30,7 +30,7 @@ func TestNewParser(t *testing.T) {
 
 func TestBuildWithCustomPlaceholder(t *testing.T) {
 	p := NewParser()
-	p.GetPlaceHolder = func(fieldname string) string {
+	p.GetPlaceHolder = func(_ *MetaData, fieldname string) string {
 		return "$" + fieldname
 	}
 
@@ -380,6 +380,10 @@ func TestParseQueryWithMapping(t *testing.T) {
 		Metadata: md,
 	}
 
+	p.GetArgMapKey = func(_ *MetaData, fn string) string {
+		return fn
+	}
+
 	u, _ := url.ParseRequestURI("http://abc.com?q=a__eq__1|b__ne__2|n__co__peter")
 	res := p.Parse(u.Query())
 
@@ -389,12 +393,62 @@ func TestParseQueryWithMapping(t *testing.T) {
 		"2",
 		"%peter%",
 	}
+	expArgMap := map[string]interface{}{
+		"a": "1",
+		"b": "2",
+		"n": "%peter%",
+	}
 
 	if res.WhereClause.Where != expWhere {
 		t.Fatalf("exp: %v, got: %v", expWhere, res.WhereClause.Where)
 	}
 	if !reflect.DeepEqual(res.WhereClause.Arguments, expArgs) {
 		t.Fatalf("exp: %v, got: %v", expArgs, res.WhereClause.Arguments)
+	}
+	if !reflect.DeepEqual(res.WhereClause.ArgumentMap, expArgMap) {
+		t.Fatalf("exp: %v, got: %v", expArgMap, res.WhereClause.ArgumentMap)
+	}
+}
+
+func TestParseQueryWithMappingAndDefaultGetMapKey(t *testing.T) {
+	md := MetaData{
+		QueryMapping: map[string]string{
+			"a": "age",
+			"n": "name",
+		},
+		DefaultSearch:  map[string]interface{}{},
+		ForceSearch:    map[string]interface{}{},
+		DefaultOrderBy: []string{},
+		ForceOrderBy:   []string{},
+	}
+
+	p := &Parser{
+		Metadata: md,
+	}
+
+	u, _ := url.ParseRequestURI("http://abc.com?q=a__eq__1|b__ne__2|n__co__peter")
+	res := p.Parse(u.Query())
+
+	expWhere := "age = ? AND b <> ? AND name LIKE ?"
+	expArgs := []interface{}{
+		"1",
+		"2",
+		"%peter%",
+	}
+	expArgMap := map[string]interface{}{
+		"age":  "1",
+		"b":    "2",
+		"name": "%peter%",
+	}
+
+	if res.WhereClause.Where != expWhere {
+		t.Fatalf("exp: %v, got: %v", expWhere, res.WhereClause.Where)
+	}
+	if !reflect.DeepEqual(res.WhereClause.Arguments, expArgs) {
+		t.Fatalf("exp: %v, got: %v", expArgs, res.WhereClause.Arguments)
+	}
+	if !reflect.DeepEqual(res.WhereClause.ArgumentMap, expArgMap) {
+		t.Fatalf("exp: %v, got: %v", expArgMap, res.WhereClause.ArgumentMap)
 	}
 }
 

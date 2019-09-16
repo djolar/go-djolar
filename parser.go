@@ -41,15 +41,18 @@ type MetaData struct {
 }
 
 // PlaceHolderFunc get place holder for given field name
-type PlaceHolderFunc func(fieldname string) string
+type PlaceHolderFunc func(md *MetaData, fieldname string) string
 
 // ArgMapKeyFunc get argment map key
-type ArgMapKeyFunc PlaceHolderFunc
+type ArgMapKeyFunc func(md *MetaData, fieldname string) string
 
-var defaultPlaceHolderFunc = func(_ string) string {
+var defaultPlaceHolderFunc = func(_ *MetaData, _ string) string {
 	return "?"
 }
-var defaultArgMapFunc = func(fieldname string) string {
+var defaultArgMapFunc = func(md *MetaData, fieldname string) string {
+	if v, ok := md.QueryMapping[fieldname]; ok {
+		return v
+	}
 	return fieldname
 }
 
@@ -146,11 +149,11 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches := pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				val := fmt.Sprintf("%%%s%%", strings.ToLower(matches[2]))
 				where = append(where, fmt.Sprintf("LOWER(%s) LIKE %s", fn, ph))
 				args = append(args, val)
-				argMap[fn] = val
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = val
 				continue
 			}
 
@@ -159,11 +162,11 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches = pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				val := fmt.Sprintf("%%%s%%", matches[2])
 				where = append(where, fmt.Sprintf("%s LIKE %s", fn, ph))
 				args = append(args, val)
-				argMap[fn] = val
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = val
 				continue
 			}
 
@@ -172,10 +175,10 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches = pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				where = append(where, fmt.Sprintf("%s = %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[fn] = matches[2]
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
 				continue
 			}
 
@@ -184,10 +187,10 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches = pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				where = append(where, fmt.Sprintf("%s <> %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[fn] = matches[2]
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
 				continue
 			}
 
@@ -196,10 +199,10 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches = pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				where = append(where, fmt.Sprintf("%s < %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[fn] = matches[2]
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
 				continue
 			}
 
@@ -208,10 +211,10 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches = pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				where = append(where, fmt.Sprintf("%s <= %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[fn] = matches[2]
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
 				continue
 			}
 
@@ -220,10 +223,10 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches = pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				where = append(where, fmt.Sprintf("%s > %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[fn] = matches[2]
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
 				continue
 			}
 
@@ -232,10 +235,10 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches = pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				where = append(where, fmt.Sprintf("%s >= %s", fn, ph))
 				args = append(args, matches[2])
-				argMap[fn] = matches[2]
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
 				continue
 			}
 
@@ -244,11 +247,11 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches = pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				val := strings.Split(matches[2], ",")
 				where = append(where, fmt.Sprintf("%s IN (%s)", fn, ph))
 				args = append(args, val)
-				argMap[fn] = val
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = val
 				continue
 			}
 
@@ -257,11 +260,11 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			matches = pattern.FindStringSubmatch(field)
 			if len(matches) == 3 {
 				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(fn)
+				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
 				val := strings.Split(matches[2], ",")
 				where = append(where, fmt.Sprintf("%s NOT IN (%s)", fn, ph))
 				args = append(args, val)
-				argMap[fn] = val
+				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = val
 				continue
 			}
 		}
@@ -270,7 +273,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 		for fieldName, value := range p.Metadata.DefaultSearch {
 			where = append(where, fieldName)
 			args = append(args, value)
-			argMap[p.GetArgMapKey(fieldName)] = value
+			argMap[p.GetArgMapKey(&p.Metadata, fieldName)] = value
 		}
 	}
 
