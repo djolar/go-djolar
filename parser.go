@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+var defaultAggregateFunctions = map[string]string{
+	"sum":   "SUM",
+	"count": "COUNT",
+	"min":   "MIN",
+	"max":   "MAX",
+	"avg":   "AVG",
+}
+
 // MetaData meta data for djolar search engine
 type MetaData struct {
 	// used to convert query field to db field
@@ -38,6 +46,17 @@ type MetaData struct {
 	// Apply order by to query no matter s query param is provided or not
 	// ForceOrderBy example []string{"age ASC", "name DESC"}
 	ForceOrderBy []string
+
+	// Aggregate functions
+	// eg.,
+	// map[string]string{
+	//   "sum": "SUM",
+	//   "count": "COUNT",
+	//   "min": "MIN",
+	//   "max": "MAX",
+	//   "avg": "AVG",
+	// }
+	AggregateFunctions map[string]string
 }
 
 // PlaceHolderFunc get place holder for given field name
@@ -73,6 +92,9 @@ type WhereClause struct {
 // ParseResult parse query result
 type ParseResult struct {
 	WhereClause   *WhereClause
+	SelectClause  string
+	GroupByClause string
+	HavingClause  *WhereClause
 	OrderByClause string
 }
 
@@ -124,7 +146,8 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 	where := make([]string, 0)
 	orderby := make([]string, 0)
 	result := &ParseResult{
-		WhereClause: &WhereClause{},
+		WhereClause:  &WhereClause{},
+		HavingClause: &WhereClause{},
 	}
 
 	if p.GetPlaceHolder == nil {
@@ -144,129 +167,13 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 	if paramQ, ok := query["q"]; ok && len(paramQ) >= 1 {
 		qVal := paramQ[0]
 		for _, field := range strings.Split(qVal, "|") {
-			// Case-insensitive Contain
-			pattern := regexp.MustCompile("(\\w+)__ico__(\\S+)")
-			matches := pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				val := fmt.Sprintf("%%%s%%", strings.ToLower(matches[2]))
-				where = append(where, fmt.Sprintf("LOWER(%s) LIKE %s", fn, ph))
-				args = append(args, val)
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = val
+			col, wh, arg, ok := p.buildWhereClause(field, p.Metadata.QueryMapping)
+			if !ok {
 				continue
 			}
-
-			// Contain
-			pattern = regexp.MustCompile("(\\w+)__co__(\\S+)")
-			matches = pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				val := fmt.Sprintf("%%%s%%", matches[2])
-				where = append(where, fmt.Sprintf("%s LIKE %s", fn, ph))
-				args = append(args, val)
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = val
-				continue
-			}
-
-			// Equal
-			pattern = regexp.MustCompile("(\\w+)__eq__(\\S+)")
-			matches = pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				where = append(where, fmt.Sprintf("%s = %s", fn, ph))
-				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
-				continue
-			}
-
-			// Not Equal
-			pattern = regexp.MustCompile("(\\w+)__ne__(\\S+)")
-			matches = pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				where = append(where, fmt.Sprintf("%s <> %s", fn, ph))
-				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
-				continue
-			}
-
-			// Less than
-			pattern = regexp.MustCompile("(\\w+)__lt__(\\S+)")
-			matches = pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				where = append(where, fmt.Sprintf("%s < %s", fn, ph))
-				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
-				continue
-			}
-
-			// Less than or equal
-			pattern = regexp.MustCompile("(\\w+)__lte__(\\S+)")
-			matches = pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				where = append(where, fmt.Sprintf("%s <= %s", fn, ph))
-				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
-				continue
-			}
-
-			// Greater than
-			pattern = regexp.MustCompile("(\\w+)__gt__(\\S+)")
-			matches = pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				where = append(where, fmt.Sprintf("%s > %s", fn, ph))
-				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
-				continue
-			}
-
-			// Greater than or equal
-			pattern = regexp.MustCompile("(\\w+)__gte__(\\S+)")
-			matches = pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				where = append(where, fmt.Sprintf("%s >= %s", fn, ph))
-				args = append(args, matches[2])
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = matches[2]
-				continue
-			}
-
-			// IN operator
-			pattern = regexp.MustCompile("(\\w+)__in__\\[(\\S+)\\]")
-			matches = pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				val := strings.Split(matches[2], ",")
-				where = append(where, fmt.Sprintf("%s IN (%s)", fn, ph))
-				args = append(args, val)
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = val
-				continue
-			}
-
-			// NOT IN operator
-			pattern = regexp.MustCompile("(\\w+)__ni__\\[(\\S+)\\]")
-			matches = pattern.FindStringSubmatch(field)
-			if len(matches) == 3 {
-				fn := p.getFieldName(matches[1])
-				ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-				val := strings.Split(matches[2], ",")
-				where = append(where, fmt.Sprintf("%s NOT IN (%s)", fn, ph))
-				args = append(args, val)
-				argMap[p.GetArgMapKey(&p.Metadata, matches[1])] = val
-				continue
-			}
+			where = append(where, wh)
+			args = append(args, arg)
+			argMap[p.GetArgMapKey(&p.Metadata, col)] = arg
 		}
 	} else {
 		// apply default search if defined
@@ -276,12 +183,14 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 			argMap[p.GetArgMapKey(&p.Metadata, fieldName)] = value
 		}
 	}
+	result.WhereClause.Where = strings.Join(where, " AND ")
+	result.WhereClause.Arguments = args
+	result.WhereClause.ArgumentMap = argMap
 
 	// Order by
 
 	// Apply force orderby
 	orderby = append(orderby, p.Metadata.ForceOrderBy...)
-
 	if paramOrderby, ok := query["s"]; ok && len(paramOrderby) >= 1 {
 		// s query param is provided
 		orderbyVal := paramOrderby[0]
@@ -290,13 +199,183 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 		// Apply default order by
 		orderby = append(orderby, p.Metadata.DefaultOrderBy...)
 	}
-
-	result.WhereClause.Where = strings.Join(where, " AND ")
-	result.WhereClause.Arguments = args
-	result.WhereClause.ArgumentMap = argMap
 	result.OrderByClause = strings.Join(orderby, ",")
 
+	// Group by
+	// Ex. g=field1,field2
+	if paramGroupBy, ok := query["g"]; ok && len(paramGroupBy) > 0 {
+		groupBy := p.buildGroupBy(paramGroupBy[0])
+		result.GroupByClause = strings.Join(groupBy, ",")
+	}
+
+	// Select
+	var selectClause []string
+	if paramSelect, ok := query["f"]; ok && len(paramSelect) > 0 {
+		selectClause = p.buildSelectClause(paramSelect[0])
+		result.SelectClause = strings.Join(selectClause, ",")
+	}
+
+	// Having clause
+	if paramHaving, ok := query["h"]; ok && len(paramHaving) > 0 {
+		result.HavingClause = p.buildHavingClause(paramHaving[0])
+	}
+
 	return result
+}
+
+func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) (colName, where string, arg interface{}, ok bool) {
+	// Case-insensitive Contain
+	pattern := regexp.MustCompile("(\\w+)__ico__(\\S+)")
+	matches := pattern.FindStringSubmatch(field)
+	var fn string
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		arg = fmt.Sprintf("%%%s%%", strings.ToLower(matches[2]))
+		where = fmt.Sprintf("LOWER(%s) LIKE %s", fn, ph)
+		colName = matches[1]
+		return
+	}
+
+	// Contain
+	pattern = regexp.MustCompile("(\\w+)__co__(\\S+)")
+	matches = pattern.FindStringSubmatch(field)
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		arg = fmt.Sprintf("%%%s%%", matches[2])
+		where = fmt.Sprintf("%s LIKE %s", fn, ph)
+		colName = matches[1]
+		return
+	}
+
+	// Equal
+	pattern = regexp.MustCompile("(\\w+)__eq__(\\S+)")
+	matches = pattern.FindStringSubmatch(field)
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		where = fmt.Sprintf("%s = %s", fn, ph)
+		arg = matches[2]
+		colName = matches[1]
+		return
+	}
+
+	// Not Equal
+	pattern = regexp.MustCompile("(\\w+)__ne__(\\S+)")
+	matches = pattern.FindStringSubmatch(field)
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		where = fmt.Sprintf("%s <> %s", fn, ph)
+		arg = matches[2]
+		colName = matches[1]
+		return
+	}
+
+	// Less than
+	pattern = regexp.MustCompile("(\\w+)__lt__(\\S+)")
+	matches = pattern.FindStringSubmatch(field)
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		where = fmt.Sprintf("%s < %s", fn, ph)
+		arg = matches[2]
+		colName = matches[1]
+		return
+	}
+
+	// Less than or equal
+	pattern = regexp.MustCompile("(\\w+)__lte__(\\S+)")
+	matches = pattern.FindStringSubmatch(field)
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		where = fmt.Sprintf("%s <= %s", fn, ph)
+		arg = matches[2]
+		colName = matches[1]
+		return
+	}
+
+	// Greater than
+	pattern = regexp.MustCompile("(\\w+)__gt__(\\S+)")
+	matches = pattern.FindStringSubmatch(field)
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		where = fmt.Sprintf("%s > %s", fn, ph)
+		arg = matches[2]
+		colName = matches[1]
+		return
+	}
+
+	// Greater than or equal
+	pattern = regexp.MustCompile("(\\w+)__gte__(\\S+)")
+	matches = pattern.FindStringSubmatch(field)
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		where = fmt.Sprintf("%s >= %s", fn, ph)
+		arg = matches[2]
+		colName = matches[1]
+		return
+	}
+
+	// IN operator
+	pattern = regexp.MustCompile("(\\w+)__in__\\[(\\S+)\\]")
+	matches = pattern.FindStringSubmatch(field)
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		arg = strings.Split(matches[2], ",")
+		where = fmt.Sprintf("%s IN (%s)", fn, ph)
+		colName = matches[1]
+		return
+	}
+
+	// NOT IN operator
+	pattern = regexp.MustCompile("(\\w+)__ni__\\[(\\S+)\\]")
+	matches = pattern.FindStringSubmatch(field)
+	if len(matches) == 3 {
+		fn, ok = queryMapping[matches[1]]
+		if !ok {
+			return "", "", nil, false
+		}
+		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+		arg = strings.Split(matches[2], ",")
+		where = fmt.Sprintf("%s NOT IN (%s)", fn, ph)
+		colName = matches[1]
+		return
+	}
+
+	return "", "", nil, false
 }
 
 func (p *Parser) buildOrderby(param string, orderby []string) []string {
@@ -305,22 +384,111 @@ func (p *Parser) buildOrderby(param string, orderby []string) []string {
 		matches := pattern.FindStringSubmatch(order)
 		if len(matches) == 3 {
 			// DESC
-			orderby = append(orderby, fmt.Sprintf("%s DESC", p.getFieldName(matches[2])))
+			if field, ok := p.Metadata.QueryMapping[matches[2]]; ok {
+				orderby = append(orderby, fmt.Sprintf("%s DESC", field))
+			}
 		} else {
 			// ASC
-			orderby = append(orderby, fmt.Sprintf("%s ASC", p.getFieldName(order)))
+			if field, ok := p.Metadata.QueryMapping[order]; ok {
+				orderby = append(orderby, fmt.Sprintf("%s ASC", field))
+			}
 		}
 	}
 
 	return orderby
 }
 
-// getFieldName get internal field name from QueryMapping,
-// if not found, then return field directly
-func (p *Parser) getFieldName(field string) string {
-	f, ok := p.Metadata.QueryMapping[field]
-	if ok {
-		return f
+func (p *Parser) buildGroupBy(param string) []string {
+	groupby := make([]string, 0)
+	for _, item := range strings.Split(param, ",") {
+		if field, ok := p.Metadata.QueryMapping[item]; ok {
+			groupby = append(groupby, field)
+		}
 	}
-	return field
+
+	return groupby
+}
+
+func (p *Parser) buildSelectClause(param string) []string {
+	clause := make([]string, 0)
+
+	var aggregrateFns map[string]string
+	if p.Metadata.AggregateFunctions == nil {
+		aggregrateFns = defaultAggregateFunctions
+	} else {
+		aggregrateFns = p.Metadata.AggregateFunctions
+	}
+
+	for _, item := range strings.Split(param, ",") {
+		if field, ok := p.Metadata.QueryMapping[item]; ok {
+			clause = append(clause, field)
+		} else {
+			// check if using aggregate functions
+			// loop over all aggregate functions
+			for k, fn := range aggregrateFns {
+				pattern := regexp.MustCompile(fmt.Sprintf("(\\w+)__%s", k))
+				matches := pattern.FindStringSubmatch(item)
+				if len(matches) == 2 {
+					clause = append(clause, fmt.Sprintf("%s(%s) AS %s", fn, matches[1], item))
+				}
+			}
+		}
+	}
+
+	return clause
+}
+
+// Build HAVING clause
+// eg., h=a__sum__lt__1|b__count__gt__0&f=a__sum
+// => [a__sum, lt, 1], [COUNT(b), gt, 0]
+//
+// Steps:
+// 1. check if the column name exist in the SELECT clause
+// 2. If not exist, then build the column with aggrgrate function
+// 3. go through the where clause building workflow
+func (p *Parser) buildHavingClause(param string) *WhereClause {
+	whereClause := &WhereClause{}
+	args := make([]interface{}, 0)
+	argMap := make(map[string]interface{})
+	where := make([]string, 0)
+
+	queryMapping := make(map[string]string)
+	for k, v := range p.Metadata.QueryMapping {
+		queryMapping[k] = v
+	}
+
+	var aggregrateFns map[string]string
+	if p.Metadata.AggregateFunctions == nil {
+		aggregrateFns = defaultAggregateFunctions
+	} else {
+		aggregrateFns = p.Metadata.AggregateFunctions
+	}
+
+	for _, field := range strings.Split(param, "|") {
+		for k, fn := range aggregrateFns {
+			pattern := regexp.MustCompile(fmt.Sprintf("(\\w+)__%s", k))
+			matches := pattern.FindStringSubmatch(field)
+			if len(matches) == 2 {
+				if fieldName, ok := queryMapping[matches[1]]; ok {
+					f := fmt.Sprintf("%s(%s)", fn, fieldName)
+					queryMapping[matches[0]] = f
+				}
+				break
+			}
+		}
+
+		col, wh, arg, ok := p.buildWhereClause(field, queryMapping)
+		if !ok {
+			continue
+		}
+		where = append(where, wh)
+		args = append(args, arg)
+		argMap[p.GetArgMapKey(&p.Metadata, col)] = arg
+	}
+
+	whereClause.ArgumentMap = argMap
+	whereClause.Arguments = args
+	whereClause.Where = strings.Join(where, " AND ")
+
+	return whereClause
 }

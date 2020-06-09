@@ -30,6 +30,19 @@ func TestNewParser(t *testing.T) {
 
 func TestBuildWithCustomPlaceholder(t *testing.T) {
 	p := NewParser()
+	p.Metadata = MetaData{
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
+	}
 	p.GetPlaceHolder = func(_ *MetaData, fieldname string) string {
 		return "$" + fieldname
 	}
@@ -87,7 +100,17 @@ func TestBuildQueryWithInvalidQueryString(t *testing.T) {
 
 func TestBuildQueryStringSuccessWithQueryString(t *testing.T) {
 	md := MetaData{
-		QueryMapping:   map[string]string{},
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
 		DefaultSearch:  map[string]interface{}{},
 		ForceSearch:    map[string]interface{}{},
 		DefaultOrderBy: []string{},
@@ -117,7 +140,17 @@ func TestBuildQueryStringSuccessWithQueryString(t *testing.T) {
 
 func TestBuildQueryWithInvalidURI(t *testing.T) {
 	md := MetaData{
-		QueryMapping:   map[string]string{},
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
 		DefaultSearch:  map[string]interface{}{},
 		ForceSearch:    map[string]interface{}{},
 		DefaultOrderBy: []string{},
@@ -135,7 +168,17 @@ func TestBuildQueryWithInvalidURI(t *testing.T) {
 
 func TestBuildQueryString(t *testing.T) {
 	md := MetaData{
-		QueryMapping:   map[string]string{},
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
 		DefaultSearch:  map[string]interface{}{},
 		ForceSearch:    map[string]interface{}{},
 		DefaultOrderBy: []string{},
@@ -165,7 +208,17 @@ func TestBuildQueryString(t *testing.T) {
 
 func TestBuildQuerySuccess(t *testing.T) {
 	md := MetaData{
-		QueryMapping:   map[string]string{},
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
 		DefaultSearch:  map[string]interface{}{},
 		ForceSearch:    map[string]interface{}{},
 		DefaultOrderBy: []string{},
@@ -193,7 +246,17 @@ func TestBuildQuerySuccess(t *testing.T) {
 
 func TestBuildOrderby(t *testing.T) {
 	md := MetaData{
-		QueryMapping:   map[string]string{},
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
 		DefaultSearch:  map[string]interface{}{},
 		ForceSearch:    map[string]interface{}{},
 		DefaultOrderBy: []string{},
@@ -214,7 +277,17 @@ func TestBuildOrderby(t *testing.T) {
 
 func TestQueryWithForceSearch(t *testing.T) {
 	md := MetaData{
-		QueryMapping:  map[string]string{},
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
 		DefaultSearch: map[string]interface{}{},
 		ForceSearch: map[string]interface{}{
 			"b = ?": "2",
@@ -244,7 +317,17 @@ func TestQueryWithForceSearch(t *testing.T) {
 
 func TestQueryWithDefaultSearch(t *testing.T) {
 	md := MetaData{
-		QueryMapping: map[string]string{},
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
 		DefaultSearch: map[string]interface{}{
 			"b = ?": "2",
 		},
@@ -293,7 +376,17 @@ func TestQueryWithDefaultSearch(t *testing.T) {
 
 func TestQueryWithDefaultOrderby(t *testing.T) {
 	md := MetaData{
-		QueryMapping:  map[string]string{},
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
 		DefaultSearch: map[string]interface{}{},
 		ForceSearch:   map[string]interface{}{},
 		DefaultOrderBy: []string{
@@ -329,7 +422,17 @@ func TestQueryWithDefaultOrderby(t *testing.T) {
 
 func TestQueryWithForceOrderby(t *testing.T) {
 	md := MetaData{
-		QueryMapping:   map[string]string{},
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
 		DefaultSearch:  map[string]interface{}{},
 		ForceSearch:    map[string]interface{}{},
 		DefaultOrderBy: []string{},
@@ -368,6 +471,7 @@ func TestParseQueryWithMapping(t *testing.T) {
 	md := MetaData{
 		QueryMapping: map[string]string{
 			"a": "age",
+			"b": "b",
 			"n": "name",
 		},
 		DefaultSearch:  map[string]interface{}{},
@@ -414,6 +518,7 @@ func TestParseQueryWithMappingAndDefaultGetMapKey(t *testing.T) {
 	md := MetaData{
 		QueryMapping: map[string]string{
 			"a": "age",
+			"b": "b",
 			"n": "name",
 		},
 		DefaultSearch:  map[string]interface{}{},
@@ -455,14 +560,11 @@ func TestParseQueryWithMappingAndDefaultGetMapKey(t *testing.T) {
 func TestParserWithoutMetadataDef(t *testing.T) {
 	p := &Parser{}
 
-	u, _ := url.ParseRequestURI("http://abc.com?q=a__eq__1|b__ne__2")
+	u, _ := url.ParseRequestURI("http://abc.com?q=a__eq__1|b__gt__2|c__gte__3|d__lt__4|e__lte__5|d__co__abc|f__ico__cde|g__in__[a,b,c]|h__ni__[a,b,c]|i__ne__h|j__xx_j")
 	res := p.Parse(u.Query())
 
-	expWhere := "a = ? AND b <> ?"
-	expArgs := []interface{}{
-		"1",
-		"2",
-	}
+	expWhere := ""
+	expArgs := []interface{}{}
 
 	if res.WhereClause.Where != expWhere {
 		t.Fatalf("exp: %v, got: %v", expWhere, res.WhereClause.Where)
@@ -482,5 +584,202 @@ func TestParserWithoutMetadataDef(t *testing.T) {
 	}
 	if !reflect.DeepEqual(res.WhereClause.Arguments, expArgs) {
 		t.Fatalf("exp: %v, got: %v", expArgs, res.WhereClause.Arguments)
+	}
+}
+
+func TestParseGroupBySuccess(t *testing.T) {
+	md := MetaData{
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+		},
+		DefaultSearch:  map[string]interface{}{},
+		ForceSearch:    map[string]interface{}{},
+		DefaultOrderBy: []string{},
+	}
+
+	p := &Parser{
+		Metadata: md,
+	}
+
+	u, _ := url.ParseRequestURI("http://abc.com?g=a,b,c,d")
+	res := p.Parse(u.Query())
+
+	exp := "a,b,c"
+	if !reflect.DeepEqual(res.GroupByClause, exp) {
+		t.Fatalf("exp: %v, got: %v", exp, res.GroupByClause)
+	}
+}
+
+func TestParseSelectClauseSuccess(t *testing.T) {
+	md := MetaData{
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
+		DefaultSearch:  map[string]interface{}{},
+		ForceSearch:    map[string]interface{}{},
+		DefaultOrderBy: []string{},
+	}
+
+	p := NewParser()
+	p.Metadata = md
+
+	u, _ := url.ParseRequestURI("http://abc.com?f=a__sum,b,c__count,d__min,e__max,f__avg")
+	res := p.Parse(u.Query())
+
+	exp := "SUM(a) AS a__sum,b,COUNT(c) AS c__count,MIN(d) AS d__min,MAX(e) AS e__max,AVG(f) AS f__avg"
+	if !reflect.DeepEqual(res.SelectClause, exp) {
+		t.Fatalf("exp: %v, got: %v", exp, res.SelectClause)
+	}
+}
+
+func TestParseSelectCustomAggregateFn(t *testing.T) {
+	md := MetaData{
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
+		DefaultSearch:  map[string]interface{}{},
+		ForceSearch:    map[string]interface{}{},
+		DefaultOrderBy: []string{},
+		AggregateFunctions: map[string]string{
+			"fn1": "FN1",
+			"fn2": "FN2",
+		},
+	}
+
+	p := NewParser()
+	p.Metadata = md
+
+	u, _ := url.ParseRequestURI("http://abc.com?f=a__fn1,b,c__fn2")
+	res := p.Parse(u.Query())
+
+	exp := "FN1(a) AS a__fn1,b,FN2(c) AS c__fn2"
+	if !reflect.DeepEqual(res.SelectClause, exp) {
+		t.Fatalf("exp: %v, got: %v", exp, res.SelectClause)
+	}
+}
+
+func TestParseHavingClauseSuccess(t *testing.T) {
+	md := MetaData{
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
+		DefaultSearch:  map[string]interface{}{},
+		ForceSearch:    map[string]interface{}{},
+		DefaultOrderBy: []string{},
+	}
+
+	p := NewParser()
+	p.Metadata = md
+
+	u, _ := url.ParseRequestURI("http://abc.com?h=a__sum__lt__1|c__count__eq__0")
+	res := p.Parse(u.Query())
+
+	exp := "SUM(a) < ? AND COUNT(c) = ?"
+	if !reflect.DeepEqual(res.HavingClause.Where, exp) {
+		t.Fatalf("exp: %v, got: %v", exp, res.HavingClause.Where)
+	}
+	exparg := []interface{}{"1", "0"}
+	if !reflect.DeepEqual(res.HavingClause.Arguments, exparg) {
+		t.Fatalf("exp: %v, got: %v", exparg, res.HavingClause.Arguments)
+	}
+	expMap := map[string]interface{}{"a__sum": "1", "c__count": "0"}
+	if !reflect.DeepEqual(res.HavingClause.ArgumentMap, expMap) {
+		t.Fatalf("exp: %v, got: %v", expMap, res.HavingClause.ArgumentMap)
+	}
+}
+
+func TestParseHavingClauseWithCustomAggregrateFunc(t *testing.T) {
+	md := MetaData{
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+		},
+		DefaultSearch:  map[string]interface{}{},
+		ForceSearch:    map[string]interface{}{},
+		DefaultOrderBy: []string{},
+		AggregateFunctions: map[string]string{
+			"fn1": "FN1",
+			"fn2": "FN2",
+		},
+	}
+
+	p := NewParser()
+	p.Metadata = md
+
+	u, _ := url.ParseRequestURI("http://abc.com?h=a__fn1__lt__1|c__fn2__eq__0")
+	res := p.Parse(u.Query())
+
+	exp := "FN1(a) < ? AND FN2(c) = ?"
+	if !reflect.DeepEqual(res.HavingClause.Where, exp) {
+		t.Fatalf("exp: %v, got: %v", exp, res.HavingClause.Where)
+	}
+	exparg := []interface{}{"1", "0"}
+	if !reflect.DeepEqual(res.HavingClause.Arguments, exparg) {
+		t.Fatalf("exp: %v, got: %v", exparg, res.HavingClause.Arguments)
+	}
+	expMap := map[string]interface{}{"a__fn1": "1", "c__fn2": "0"}
+	if !reflect.DeepEqual(res.HavingClause.ArgumentMap, expMap) {
+		t.Fatalf("exp: %v, got: %v", expMap, res.HavingClause.ArgumentMap)
+	}
+}
+
+func TestParseHavingWithNonExistField(t *testing.T) {
+	md := MetaData{
+		QueryMapping:   map[string]string{},
+		DefaultSearch:  map[string]interface{}{},
+		ForceSearch:    map[string]interface{}{},
+		DefaultOrderBy: []string{},
+	}
+
+	p := NewParser()
+	p.Metadata = md
+
+	u, _ := url.ParseRequestURI("http://abc.com?h=a__sum__lt__1|c__count__eq__0")
+	res := p.Parse(u.Query())
+
+	exp := ""
+	if !reflect.DeepEqual(res.HavingClause.Where, exp) {
+		t.Fatalf("exp: %v, got: %v", exp, res.HavingClause.Where)
+	}
+	exparg := []interface{}{}
+	if !reflect.DeepEqual(res.HavingClause.Arguments, exparg) {
+		t.Fatalf("exp: %v, got: %v", exparg, res.HavingClause.Arguments)
+	}
+	expMap := map[string]interface{}{}
+	if !reflect.DeepEqual(res.HavingClause.ArgumentMap, expMap) {
+		t.Fatalf("exp: %v, got: %v", expMap, res.HavingClause.ArgumentMap)
 	}
 }
