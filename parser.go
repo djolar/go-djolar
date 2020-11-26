@@ -164,7 +164,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 	}
 
 	// Query
-	if paramQ, ok := query["q"]; ok && len(paramQ) >= 1 {
+	if paramQ, ok := query["q"]; ok && len(paramQ) >= 1 && len(paramQ[0]) > 0 {
 		qVal := paramQ[0]
 		for _, field := range strings.Split(qVal, "|") {
 			col, wh, arg, ok := p.buildWhereClause(field, p.Metadata.QueryMapping)
