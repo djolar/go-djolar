@@ -191,7 +191,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 
 	// Apply force orderby
 	orderby = append(orderby, p.Metadata.ForceOrderBy...)
-	if paramOrderby, ok := query["s"]; ok && len(paramOrderby) >= 1 {
+	if paramOrderby, ok := query["s"]; ok && len(paramOrderby) >= 1 && len(paramOrderby[0]) > 0 {
 		// s query param is provided
 		orderbyVal := paramOrderby[0]
 		orderby = p.buildOrderby(orderbyVal, orderby)
