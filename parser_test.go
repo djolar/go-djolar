@@ -783,3 +783,26 @@ func TestParseHavingWithNonExistField(t *testing.T) {
 		t.Fatalf("exp: %v, got: %v", expMap, res.HavingClause.ArgumentMap)
 	}
 }
+
+func TestParseQueryDefaultOrderByEmpty(t *testing.T) {
+	p := NewParser()
+	p.Metadata.DefaultOrderBy = []string{
+		"id DESC",
+		"created_at ASC",
+	}
+	res, _ := p.ParseQuery("s=")
+	if res.OrderByClause != "id DESC,created_at ASC" {
+		t.Fatalf("exp: %v, got: %v(length: %d)", "id DESC,created_at ASC", res.OrderByClause, len(res.OrderByClause))
+	}
+}
+
+func TestParseQueryDefaultSearchEmpty(t *testing.T) {
+	p := NewParser()
+	p.Metadata.DefaultSearch = map[string]interface{}{
+		"id = ?": 1,
+	}
+	res, _ := p.ParseQuery("q=")
+	if res.WhereClause.Where != "id = ?" {
+		t.Fatalf("exp: %v, got: %v(length: %d)", "id = ?", res.WhereClause.Where, len(res.WhereClause.Where))
+	}
+}

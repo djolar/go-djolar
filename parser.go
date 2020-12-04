@@ -164,7 +164,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 	}
 
 	// Query
-	if paramQ, ok := query["q"]; ok && len(paramQ) >= 1 {
+	if paramQ, ok := query["q"]; ok && len(paramQ) >= 1 && len(paramQ[0]) > 0 {
 		qVal := paramQ[0]
 		for _, field := range strings.Split(qVal, "|") {
 			col, wh, arg, ok := p.buildWhereClause(field, p.Metadata.QueryMapping)
@@ -191,7 +191,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 
 	// Apply force orderby
 	orderby = append(orderby, p.Metadata.ForceOrderBy...)
-	if paramOrderby, ok := query["s"]; ok && len(paramOrderby) >= 1 {
+	if paramOrderby, ok := query["s"]; ok && len(paramOrderby) >= 1 && len(paramOrderby[0]) > 0 {
 		// s query param is provided
 		orderbyVal := paramOrderby[0]
 		orderby = p.buildOrderby(orderbyVal, orderby)
