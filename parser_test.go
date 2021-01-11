@@ -806,3 +806,35 @@ func TestParseQueryDefaultSearchEmpty(t *testing.T) {
 		t.Fatalf("exp: %v, got: %v(length: %d)", "id = ?", res.WhereClause.Where, len(res.WhereClause.Where))
 	}
 }
+
+func TestParseDatetime(t *testing.T) {
+	p := NewParser()
+	p.Metadata = MetaData{
+		QueryMapping: map[string]string{
+			"created_at_from": "created_at",
+			"created_at_to":   "created_at",
+		},
+	}
+
+	res, err := p.ParseURI("http://a/v1/a/orders?limit=20&offset=0&q=created_at_from__gte__2021-01-11%2000%3A00%7Ccreated_at_to__lte__2021-01-11%2023%3A59")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.WhereClause.Where != "created_at >= ? AND created_at <= ?" {
+		t.Fatal(res.WhereClause.Where)
+	}
+
+	if len(res.WhereClause.Arguments) != 2 {
+		t.Fatal(res.WhereClause.Arguments...)
+	}
+
+	first := res.WhereClause.Arguments[0].(string)
+	second := res.WhereClause.Arguments[1].(string)
+	if first != "2021-01-11 00:00" {
+		t.Fatal(res.WhereClause.Arguments...)
+	}
+	if second != "2021-01-11 23:59" {
+		t.Fatal(res.WhereClause.Arguments...)
+	}
+}

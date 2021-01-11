@@ -225,7 +225,7 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 
 func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) (colName, where string, arg interface{}, ok bool) {
 	// Case-insensitive Contain
-	pattern := regexp.MustCompile("(\\w+)__ico__(\\S+)")
+	pattern := regexp.MustCompile("(\\w+)__ico__(.*)")
 	matches := pattern.FindStringSubmatch(field)
 	var fn string
 	if len(matches) == 3 {
@@ -241,7 +241,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 	}
 
 	// Contain
-	pattern = regexp.MustCompile("(\\w+)__co__(\\S+)")
+	pattern = regexp.MustCompile("(\\w+)__co__(.*)")
 	matches = pattern.FindStringSubmatch(field)
 	if len(matches) == 3 {
 		fn, ok = queryMapping[matches[1]]
@@ -256,7 +256,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 	}
 
 	// Equal
-	pattern = regexp.MustCompile("(\\w+)__eq__(\\S+)")
+	pattern = regexp.MustCompile("(\\w+)__eq__(.*)")
 	matches = pattern.FindStringSubmatch(field)
 	if len(matches) == 3 {
 		fn, ok = queryMapping[matches[1]]
@@ -271,7 +271,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 	}
 
 	// Not Equal
-	pattern = regexp.MustCompile("(\\w+)__ne__(\\S+)")
+	pattern = regexp.MustCompile("(\\w+)__ne__(.*)")
 	matches = pattern.FindStringSubmatch(field)
 	if len(matches) == 3 {
 		fn, ok = queryMapping[matches[1]]
@@ -286,7 +286,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 	}
 
 	// Less than
-	pattern = regexp.MustCompile("(\\w+)__lt__(\\S+)")
+	pattern = regexp.MustCompile("(\\w+)__lt__(.*)")
 	matches = pattern.FindStringSubmatch(field)
 	if len(matches) == 3 {
 		fn, ok = queryMapping[matches[1]]
@@ -301,7 +301,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 	}
 
 	// Less than or equal
-	pattern = regexp.MustCompile("(\\w+)__lte__(\\S+)")
+	pattern = regexp.MustCompile("(\\w+)__lte__(.*)")
 	matches = pattern.FindStringSubmatch(field)
 	if len(matches) == 3 {
 		fn, ok = queryMapping[matches[1]]
@@ -316,7 +316,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 	}
 
 	// Greater than
-	pattern = regexp.MustCompile("(\\w+)__gt__(\\S+)")
+	pattern = regexp.MustCompile("(\\w+)__gt__(.*)")
 	matches = pattern.FindStringSubmatch(field)
 	if len(matches) == 3 {
 		fn, ok = queryMapping[matches[1]]
@@ -331,7 +331,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 	}
 
 	// Greater than or equal
-	pattern = regexp.MustCompile("(\\w+)__gte__(\\S+)")
+	pattern = regexp.MustCompile("(\\w+)__gte__(.*)")
 	matches = pattern.FindStringSubmatch(field)
 	if len(matches) == 3 {
 		fn, ok = queryMapping[matches[1]]
@@ -346,7 +346,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 	}
 
 	// IN operator
-	pattern = regexp.MustCompile("(\\w+)__in__\\[(\\S+)\\]")
+	pattern = regexp.MustCompile("(\\w+)__in__\\[(.*)\\]")
 	matches = pattern.FindStringSubmatch(field)
 	if len(matches) == 3 {
 		fn, ok = queryMapping[matches[1]]
@@ -361,7 +361,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 	}
 
 	// NOT IN operator
-	pattern = regexp.MustCompile("(\\w+)__ni__\\[(\\S+)\\]")
+	pattern = regexp.MustCompile("(\\w+)__ni__\\[(.*)\\]")
 	matches = pattern.FindStringSubmatch(field)
 	if len(matches) == 3 {
 		fn, ok = queryMapping[matches[1]]
@@ -380,7 +380,7 @@ func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) 
 
 func (p *Parser) buildOrderby(param string, orderby []string) []string {
 	for _, order := range strings.Split(param, ",") {
-		pattern := regexp.MustCompile("(-)(\\S+)")
+		pattern := regexp.MustCompile("(-)(.*)")
 		matches := pattern.FindStringSubmatch(order)
 		if len(matches) == 3 {
 			// DESC
