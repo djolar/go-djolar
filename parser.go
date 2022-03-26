@@ -15,6 +15,113 @@ var defaultAggregateFunctions = map[string]string{
 	"avg":   "AVG",
 }
 
+// Argument processor
+type ArgumentHandler func(value string) interface{}
+
+// Where clause processor
+type WhereClauseHandler func(field, placeholder string) string
+
+// PlaceHolderFunc get place holder for given field name
+type PlaceHolderFunc func(md *MetaData, fieldname string) string
+
+// ArgMapKeyFunc get argment map key
+type ArgMapKeyFunc func(md *MetaData, fieldname string) string
+
+type Operator struct {
+	WhereClauseHandler WhereClauseHandler
+	ArgumentHandler    ArgumentHandler
+}
+
+var (
+	queryPattern = regexp.MustCompile(`(\w+)__(\w+)__(.*)`)
+	operators    = map[string]Operator{
+		"ico": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("LOWER(%s) LIKE %s", field, placeholder)
+			},
+			ArgumentHandler: func(arg string) interface{} {
+				return fmt.Sprintf("%%%s%%", strings.ToLower(arg))
+			},
+		},
+		"co": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s LIKE %s", field, placeholder)
+			},
+			ArgumentHandler: func(arg string) interface{} {
+				return fmt.Sprintf("%%%s%%", arg)
+			},
+		},
+		"sw": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s LIKE %s", field, placeholder)
+			},
+			ArgumentHandler: func(arg string) interface{} {
+				return fmt.Sprintf("%s%%", arg)
+			},
+		},
+		"ew": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s LIKE %s", field, placeholder)
+			},
+			ArgumentHandler: func(arg string) interface{} {
+				return fmt.Sprintf("%%%s", arg)
+			},
+		},
+		"eq": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s = %s", field, placeholder)
+			},
+			ArgumentHandler: DefaultArgumentHandler,
+		},
+		"ne": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s <> %s", field, placeholder)
+			},
+			ArgumentHandler: DefaultArgumentHandler,
+		},
+		"lt": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s < %s", field, placeholder)
+			},
+			ArgumentHandler: DefaultArgumentHandler,
+		},
+		"gt": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s > %s", field, placeholder)
+			},
+			ArgumentHandler: DefaultArgumentHandler,
+		},
+		"lte": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s <= %s", field, placeholder)
+			},
+			ArgumentHandler: DefaultArgumentHandler,
+		},
+		"gte": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s >= %s", field, placeholder)
+			},
+			ArgumentHandler: DefaultArgumentHandler,
+		},
+		"in": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s IN (%s)", field, placeholder)
+			},
+			ArgumentHandler: func(arg string) interface{} {
+				return strings.Split(strings.TrimRight(strings.TrimLeft(arg, "["), "]"), ",")
+			},
+		},
+		"ni": {
+			WhereClauseHandler: func(field, placeholder string) string {
+				return fmt.Sprintf("%s NOT IN (%s)", field, placeholder)
+			},
+			ArgumentHandler: func(arg string) interface{} {
+				return strings.Split(strings.TrimRight(strings.TrimLeft(arg, "["), "]"), ",")
+			},
+		},
+	}
+)
+
 // MetaData meta data for djolar search engine
 type MetaData struct {
 	// used to convert query field to db field
@@ -57,22 +164,6 @@ type MetaData struct {
 	//   "avg": "AVG",
 	// }
 	AggregateFunctions map[string]string
-}
-
-// PlaceHolderFunc get place holder for given field name
-type PlaceHolderFunc func(md *MetaData, fieldname string) string
-
-// ArgMapKeyFunc get argment map key
-type ArgMapKeyFunc func(md *MetaData, fieldname string) string
-
-var defaultPlaceHolderFunc = func(_ *MetaData, _ string) string {
-	return "?"
-}
-var defaultArgMapFunc = func(md *MetaData, fieldname string) string {
-	if v, ok := md.QueryMapping[fieldname]; ok {
-		return v
-	}
-	return fieldname
 }
 
 // Parser djolar search engine parser
@@ -225,162 +316,29 @@ func (p *Parser) Parse(query url.Values) *ParseResult {
 
 func (p *Parser) buildWhereClause(field string, queryMapping map[string]string) (colName, where string, arg interface{}, ok bool) {
 	// Case-insensitive Contain
-	pattern := regexp.MustCompile("(\\w+)__ico__(.*)")
-	matches := pattern.FindStringSubmatch(field)
-	var fn string
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		arg = fmt.Sprintf("%%%s%%", strings.ToLower(matches[2]))
-		where = fmt.Sprintf("LOWER(%s) LIKE %s", fn, ph)
-		colName = matches[1]
-		return
+	matches := queryPattern.FindStringSubmatch(field)
+	if len(matches) != 4 {
+		return "", "", nil, false
 	}
 
-	// Contain
-	pattern = regexp.MustCompile("(\\w+)__co__(.*)")
-	matches = pattern.FindStringSubmatch(field)
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		arg = fmt.Sprintf("%%%s%%", matches[2])
-		where = fmt.Sprintf("%s LIKE %s", fn, ph)
-		colName = matches[1]
-		return
+	fn, ok := queryMapping[matches[1]]
+	if !ok {
+		return "", "", nil, false
 	}
-
-	// Equal
-	pattern = regexp.MustCompile("(\\w+)__eq__(.*)")
-	matches = pattern.FindStringSubmatch(field)
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		where = fmt.Sprintf("%s = %s", fn, ph)
-		arg = matches[2]
-		colName = matches[1]
-		return
+	op, ok := operators[matches[2]]
+	if !ok {
+		return "", "", nil, false
 	}
-
-	// Not Equal
-	pattern = regexp.MustCompile("(\\w+)__ne__(.*)")
-	matches = pattern.FindStringSubmatch(field)
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		where = fmt.Sprintf("%s <> %s", fn, ph)
-		arg = matches[2]
-		colName = matches[1]
-		return
-	}
-
-	// Less than
-	pattern = regexp.MustCompile("(\\w+)__lt__(.*)")
-	matches = pattern.FindStringSubmatch(field)
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		where = fmt.Sprintf("%s < %s", fn, ph)
-		arg = matches[2]
-		colName = matches[1]
-		return
-	}
-
-	// Less than or equal
-	pattern = regexp.MustCompile("(\\w+)__lte__(.*)")
-	matches = pattern.FindStringSubmatch(field)
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		where = fmt.Sprintf("%s <= %s", fn, ph)
-		arg = matches[2]
-		colName = matches[1]
-		return
-	}
-
-	// Greater than
-	pattern = regexp.MustCompile("(\\w+)__gt__(.*)")
-	matches = pattern.FindStringSubmatch(field)
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		where = fmt.Sprintf("%s > %s", fn, ph)
-		arg = matches[2]
-		colName = matches[1]
-		return
-	}
-
-	// Greater than or equal
-	pattern = regexp.MustCompile("(\\w+)__gte__(.*)")
-	matches = pattern.FindStringSubmatch(field)
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		where = fmt.Sprintf("%s >= %s", fn, ph)
-		arg = matches[2]
-		colName = matches[1]
-		return
-	}
-
-	// IN operator
-	pattern = regexp.MustCompile("(\\w+)__in__\\[(.*)\\]")
-	matches = pattern.FindStringSubmatch(field)
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		arg = strings.Split(matches[2], ",")
-		where = fmt.Sprintf("%s IN (%s)", fn, ph)
-		colName = matches[1]
-		return
-	}
-
-	// NOT IN operator
-	pattern = regexp.MustCompile("(\\w+)__ni__\\[(.*)\\]")
-	matches = pattern.FindStringSubmatch(field)
-	if len(matches) == 3 {
-		fn, ok = queryMapping[matches[1]]
-		if !ok {
-			return "", "", nil, false
-		}
-		ph := p.GetPlaceHolder(&p.Metadata, matches[1])
-		arg = strings.Split(matches[2], ",")
-		where = fmt.Sprintf("%s NOT IN (%s)", fn, ph)
-		colName = matches[1]
-		return
-	}
-
-	return "", "", nil, false
+	ph := p.GetPlaceHolder(&p.Metadata, matches[1])
+	arg = op.ArgumentHandler(matches[3])
+	where = op.WhereClauseHandler(fn, ph)
+	colName = matches[1]
+	return
 }
 
 func (p *Parser) buildOrderby(param string, orderby []string) []string {
+	pattern := regexp.MustCompile("(-)(.*)")
 	for _, order := range strings.Split(param, ",") {
-		pattern := regexp.MustCompile("(-)(.*)")
 		matches := pattern.FindStringSubmatch(order)
 		if len(matches) == 3 {
 			// DESC
@@ -426,7 +384,7 @@ func (p *Parser) buildSelectClause(param string) []string {
 			// check if using aggregate functions
 			// loop over all aggregate functions
 			for k, fn := range aggregrateFns {
-				pattern := regexp.MustCompile(fmt.Sprintf("(\\w+)__%s", k))
+				pattern := regexp.MustCompile(fmt.Sprintf(`(\w+)__%s`, k))
 				matches := pattern.FindStringSubmatch(item)
 				if len(matches) == 2 {
 					clause = append(clause, fmt.Sprintf("%s(%s) AS %s", fn, matches[1], item))
@@ -466,7 +424,7 @@ func (p *Parser) buildHavingClause(param string) *WhereClause {
 
 	for _, field := range strings.Split(param, "|") {
 		for k, fn := range aggregrateFns {
-			pattern := regexp.MustCompile(fmt.Sprintf("(\\w+)__%s", k))
+			pattern := regexp.MustCompile(fmt.Sprintf(`(\w+)__%s`, k))
 			matches := pattern.FindStringSubmatch(field)
 			if len(matches) == 2 {
 				if fieldName, ok := queryMapping[matches[1]]; ok {
@@ -491,4 +449,19 @@ func (p *Parser) buildHavingClause(param string) *WhereClause {
 	whereClause.Where = strings.Join(where, " AND ")
 
 	return whereClause
+}
+
+func DefaultArgumentHandler(arg string) interface{} {
+	return arg
+}
+
+func defaultArgMapFunc(md *MetaData, fieldname string) string {
+	if v, ok := md.QueryMapping[fieldname]; ok {
+		return v
+	}
+	return fieldname
+}
+
+func defaultPlaceHolderFunc(_ *MetaData, _ string) string {
+	return "?"
 }

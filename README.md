@@ -51,7 +51,7 @@ if len(res.OrderByClause) > 0 {
 db.Find(&users)
 ```
 
-## Criteria 1
+### Criteria 1
 
 Filter user with `name` contains `enix` and `age` above `18` years
 
@@ -61,7 +61,7 @@ Frontend:
 http://www.example.com/v1/users?q=n__co__enix
 ```
 
-## Criteria 2
+### Criteria 2
 
 Filter user with `name` contain equal `enix` and `age` above `18` years
 
@@ -69,4 +69,12 @@ Frontend:
 
 ```
 http://www.example.com/v1/users?q=n__eq__enix
+```
+
+
+## Benchmark
+
+```
+cpu: Intel(R) Core(TM) i5-5250U CPU @ 1.60GHz
+BenchmarkParser-4   	   40946	     35032 ns/op	    4982 B/op	     105 allocs/op
 ```

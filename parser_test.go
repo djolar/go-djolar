@@ -28,6 +28,34 @@ func TestNewParser(t *testing.T) {
 	}
 }
 
+func TestNonExistOperator(t *testing.T) {
+	p := NewParser()
+	p.Metadata = MetaData{
+		QueryMapping: map[string]string{
+			"a": "a",
+		},
+	}
+	res, err := p.ParseQuery("q=a__yy__b")
+	if err != nil {
+		t.Fatalf("exp: no err, got: %v", err)
+	}
+	if res.WhereClause.Where != "" {
+		t.Fail()
+	}
+	if res.OrderByClause != "" {
+		t.Fail()
+	}
+	if res.HavingClause.Where != "" {
+		t.Fail()
+	}
+	if res.GroupByClause != "" {
+		t.Fail()
+	}
+	if res.SelectClause != "" {
+		t.Fail()
+	}
+}
+
 func TestBuildWithCustomPlaceholder(t *testing.T) {
 	p := NewParser()
 	p.Metadata = MetaData{
@@ -41,24 +69,26 @@ func TestBuildWithCustomPlaceholder(t *testing.T) {
 			"g": "g",
 			"h": "h",
 			"i": "i",
+			"j": "j",
+			"l": "l",
 		},
 	}
 	p.GetPlaceHolder = func(_ *MetaData, fieldname string) string {
 		return "$" + fieldname
 	}
 
-	res, err := p.ParseQuery("q=a__eq__1|b__gt__2|c__gte__3|d__lt__4|e__lte__5|f__ico__cde|g__in__[a,b,c]|h__ni__[a,b,c]|i__ne__h")
+	res, err := p.ParseQuery("q=a__eq__1|b__gt__2|c__gte__3|d__lt__4|e__lte__5|f__ico__cde|g__in__[a,b,c]|h__ni__[a,b,c]|i__ne__h|j__sw__k|l__ew__m")
 	if err != nil {
 		t.Fatalf("exp: no err, got: %v", err)
 	}
 
-	exp := "a = $a AND b > $b AND c >= $c AND d < $d AND e <= $e AND LOWER(f) LIKE $f AND g IN ($g) AND h NOT IN ($h) AND i <> $i"
+	exp := "a = $a AND b > $b AND c >= $c AND d < $d AND e <= $e AND LOWER(f) LIKE $f AND g IN ($g) AND h NOT IN ($h) AND i <> $i AND j LIKE $j AND l LIKE $l"
 	if res.WhereClause.Where != exp {
 		t.Fatalf("exp: %v, got: %v", exp, res.WhereClause.Where)
 	}
 
 	args := []interface{}{
-		"1", "2", "3", "4", "5", "%cde%", []string{"a", "b", "c"}, []string{"a", "b", "c"}, "h",
+		"1", "2", "3", "4", "5", "%cde%", []string{"a", "b", "c"}, []string{"a", "b", "c"}, "h", "k%", "%m",
 	}
 	if !reflect.DeepEqual(res.WhereClause.Arguments, args) {
 		t.Fatalf("exp: %v, got: %v", args, res.WhereClause.Arguments)
@@ -74,6 +104,8 @@ func TestBuildWithCustomPlaceholder(t *testing.T) {
 		"g": []string{"a", "b", "c"},
 		"h": []string{"a", "b", "c"},
 		"i": "h",
+		"j": "k%",
+		"l": "%m",
 	}
 	if !reflect.DeepEqual(res.WhereClause.ArgumentMap, argMaps) {
 		t.Fatalf("exp: %v, got: %v", args, res.WhereClause.ArgumentMap)
@@ -110,6 +142,8 @@ func TestBuildQueryStringSuccessWithQueryString(t *testing.T) {
 			"g": "g",
 			"h": "h",
 			"i": "i",
+			"j": "j",
+			"l": "l",
 		},
 		DefaultSearch:  map[string]interface{}{},
 		ForceSearch:    map[string]interface{}{},
@@ -120,18 +154,18 @@ func TestBuildQueryStringSuccessWithQueryString(t *testing.T) {
 		Metadata: md,
 	}
 
-	res, err := p.ParseQuery("q=a__eq__1|b__gt__2|c__gte__3|d__lt__4|e__lte__5|d__co__abc|f__ico__cde|g__in__[a,b,c]|h__ni__[a,b,c]|i__ne__h")
+	res, err := p.ParseQuery("q=a__eq__1|b__gt__2|c__gte__3|d__lt__4|e__lte__5|d__co__abc|f__ico__cde|g__in__[a,b,c]|h__ni__[a,b,c]|i__ne__h|j__sw__k|l__ew__m")
 	if err != nil {
 		t.Fatalf("exp: no err, got: %v", err)
 	}
 
-	exp := "a = ? AND b > ? AND c >= ? AND d < ? AND e <= ? AND d LIKE ? AND LOWER(f) LIKE ? AND g IN (?) AND h NOT IN (?) AND i <> ?"
+	exp := "a = ? AND b > ? AND c >= ? AND d < ? AND e <= ? AND d LIKE ? AND LOWER(f) LIKE ? AND g IN (?) AND h NOT IN (?) AND i <> ? AND j LIKE ? AND l LIKE ?"
 	if res.WhereClause.Where != exp {
 		t.Fatalf("exp: %v, got: %v", exp, res.WhereClause.Where)
 	}
 
 	args := []interface{}{
-		"1", "2", "3", "4", "5", "%abc%", "%cde%", []string{"a", "b", "c"}, []string{"a", "b", "c"}, "h",
+		"1", "2", "3", "4", "5", "%abc%", "%cde%", []string{"a", "b", "c"}, []string{"a", "b", "c"}, "h", "k%", "%m",
 	}
 	if !reflect.DeepEqual(res.WhereClause.Arguments, args) {
 		t.Fatalf("exp: %v, got: %v", args, res.WhereClause.Arguments)
@@ -836,5 +870,34 @@ func TestParseDatetime(t *testing.T) {
 	}
 	if second != "2021-01-11 23:59" {
 		t.Fatal(res.WhereClause.Arguments...)
+	}
+}
+
+func BenchmarkParser(b *testing.B) {
+	md := MetaData{
+		QueryMapping: map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "c",
+			"d": "d",
+			"e": "e",
+			"f": "f",
+			"g": "g",
+			"h": "h",
+			"i": "i",
+			"j": "j",
+			"l": "l",
+		},
+		DefaultSearch:  map[string]interface{}{},
+		ForceSearch:    map[string]interface{}{},
+		DefaultOrderBy: []string{},
+	}
+
+	p := &Parser{
+		Metadata: md,
+	}
+
+	for i := 0; i < b.N; i++ {
+		p.ParseQuery("q=a__eq__1|b__gt__2|c__gte__3|d__lt__4|e__lte__5|d__co__abc|f__ico__cde|g__in__[a,b,c]|h__ni__[a,b,c]|i__ne__h|j__sw__k|l__ew__m")
 	}
 }

@@ -1,3 +1,3 @@
 module github.com/enix223/go-djolar
 
-go 1.13
+go 1.16
